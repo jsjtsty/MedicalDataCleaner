@@ -9,3 +9,5 @@ void trim(std::string &str);
 std::wstring ansiToWideString(const std::string& raw);
 std::string wideToAnsiString(const std::wstring& raw);
 std::string utf8ToAnsiString(const std::string& raw);
+std::wstring utf8ToWideString(const std::string& raw);
+std::string wideToUtf8String(const std::wstring& raw);

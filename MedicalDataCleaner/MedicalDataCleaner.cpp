@@ -8,7 +8,7 @@
 
 int main() {
     std::cout << "MedicalDataCleaner - Clean data for dialog diagnosis." << std::endl;
-    std::cout << "Version 1.0.3. Copyright (C) NulStudio 2014-2023. All rights reserved." << std::endl;
+    std::cout << "Version 1.0.4. Copyright (C) NulStudio 2014-2023. All rights reserved." << std::endl;
     std::cout << std::endl;
 
     std::vector<MedicalDataEntry> parsedData;
@@ -33,6 +33,10 @@ int main() {
             }
             parsedData = parseMedicalDataFile(path);
             break;
+        }
+        catch (const std::exception& e) {
+            std::cout << "Error: Cannot parse file \'" << path << "\'." << std::endl;
+            std::cout << "Error message: " << e.what() << std::endl << std::endl;
         }
         catch (...) {
             std::cout << "Error: Cannot parse file \'" << path << "\', please try again." << std::endl << std::endl;

@@ -32,6 +32,15 @@ std::string wideToAnsiString(const std::wstring& raw) {
 	return result;
 }
 
+std::string wideToUtf8String(const std::wstring& raw) {
+	int len = WideCharToMultiByte(CP_UTF8, 0, raw.c_str(), -1, NULL, 0, NULL, NULL);
+	char* temp = new char[len + 1];
+	WideCharToMultiByte(CP_UTF8, 0, raw.c_str(), -1, temp, len, NULL, NULL);
+	std::string result = temp;
+	delete[] temp;
+	return result;
+}
+
 std::string utf8ToAnsiString(const std::string& raw) {
 	int len = MultiByteToWideChar(CP_UTF8, 0, raw.c_str(), -1, NULL, 0);
 	wchar_t* temp = new wchar_t[len + 1];
@@ -42,6 +51,16 @@ std::string utf8ToAnsiString(const std::string& raw) {
 	delete[] temp;
 
 	std::string result = buffer;
+	delete[] buffer;
+
+	return result;
+}
+
+std::wstring utf8ToWideString(const std::string& raw) {
+	int len = MultiByteToWideChar(CP_UTF8, 0, raw.c_str(), -1, NULL, 0);
+	wchar_t* buffer = new wchar_t[len + 1];
+	MultiByteToWideChar(CP_UTF8, 0, raw.c_str(), -1, buffer, len);
+	std::wstring result = buffer;
 	delete[] buffer;
 
 	return result;

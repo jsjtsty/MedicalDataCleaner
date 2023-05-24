@@ -2,13 +2,14 @@
 #include <fstream>
 #include <functional>
 #include <json/json.h>
+#include <iostream>
 #include <Windows.h>
 #include "util.h"
 
 constexpr const char* ERR_INVALID_JSON = "Invalid JSON file.";
 
-constexpr const char *KEY_COMPLAINT = "主诉", *KEY_HISTORY = "现病史", *KEY_FORMER = "既往史",
-*KEY_COMPLAINT_ENTITY = "主诉实体", *KEY_HISTORY_ENTITY = "现病史实体", *KEY_FORMER_ENTITY = "既往史实体";
+constexpr const wchar_t *KEY_COMPLAINT = L"主诉", *KEY_HISTORY = L"现病史", *KEY_FORMER = L"既往史",
+*KEY_COMPLAINT_ENTITY = L"主诉实体", *KEY_HISTORY_ENTITY = L"现病史实体", *KEY_FORMER_ENTITY = L"既往史实体";
 
 namespace {
 	typedef MedicalDataEntry::Keyword Keyword;
@@ -18,10 +19,11 @@ namespace {
 
 	std::string extractString(const Json::Value& value, const std::string& key) {
 		std::string result;
+		//std::string utf8Key = ansiTo
 		if (value.isMember(key)) {
 			const Json::Value target = value[key];
 			if (target.isString()) {
-				 result = target.asString();
+				 result = utf8ToAnsiString(target.asString());
 			}
 		}
 		return result;
@@ -35,7 +37,7 @@ namespace {
 				for (int i = 0; i < size; ++i) {
 					const Json::Value element = list[i];
 					if (element.isString()) {
-						std::string s = element.asString();
+						std::string s = utf8ToAnsiString(element.asString());
 						std::string name, present;
 						int start, end;
 
@@ -65,42 +67,39 @@ std::vector<MedicalDataEntry> parseMedicalDataFile(const std::string path) {
 	Json::CharReaderBuilder rbuilder;
 	Json::Value root;
 	std::string rawString;
-	std::ifstream ifs(path);
-	while (!ifs.eof()) {
-		rawString += ifs.get();
-	}
-	ifs.close();
-	std::string convertedString = utf8ToAnsiString(rawString);
+	std::ifstream ifs(path, std::ifstream::in | std::ifstream::binary);
 	std::unique_ptr<Json::CharReader> const reader(rbuilder.newCharReader());
 	std::string errs;
-	funcResult = reader->parse(convertedString.c_str(), convertedString.c_str() + convertedString.size(), &root, &errs);
+	//funcResult = reader->parse(convertedString.c_str(), convertedString.c_str() + convertedString.size(), &root, &errs);
+	funcResult = Json::parseFromStream(rbuilder, ifs, &root, &errs);
 	if (!funcResult) {
 		throw JsonParseError(errs);
 	}
+	ifs.close();
 
 	const Json::Value::Members rootMembers = root.getMemberNames();
 	if (rootMembers.size() != 1) {
 		throw JsonParseError(ERR_INVALID_JSON);
 	}
 	const std::string name = rootMembers[0];
-
+	
 	const Json::Value dataList = root[name];
 	if (dataList.type() != Json::ValueType::arrayValue) {
 		throw JsonParseError(ERR_INVALID_JSON);
 	}
 	for (int i = 0; i < (int)dataList.size(); ++i) {
 		const Json::Value entryValue = dataList[i];
-		std::string complaint = extractString(entryValue, KEY_COMPLAINT), 
-			history = extractString(entryValue, KEY_HISTORY),
-			former = extractString(entryValue, KEY_FORMER);
+		std::string complaint = extractString(entryValue, wideToUtf8String(KEY_COMPLAINT)), 
+			history = extractString(entryValue, wideToUtf8String(KEY_HISTORY)),
+			former = extractString(entryValue, wideToUtf8String(KEY_FORMER));
 		MedicalDataEntry entry(complaint, history, former);
-		extractKeywordList(entryValue, KEY_COMPLAINT_ENTITY, [&entry](const Keyword& keyword) {
+		extractKeywordList(entryValue, wideToUtf8String(KEY_COMPLAINT_ENTITY), [&entry](const Keyword& keyword) {
 			entry.addComplaintKeyword(keyword);
 			});
-		extractKeywordList(entryValue, KEY_HISTORY_ENTITY, [&entry](const Keyword& keyword) {
+		extractKeywordList(entryValue, wideToUtf8String(KEY_HISTORY_ENTITY), [&entry](const Keyword& keyword) {
 			entry.addHistoryKeyword(keyword);
 			});
-		extractKeywordList(entryValue, KEY_FORMER_ENTITY, [&entry](const Keyword& keyword) {
+		extractKeywordList(entryValue, wideToUtf8String(KEY_FORMER_ENTITY), [&entry](const Keyword& keyword) {
 			entry.addFormerKeyword(keyword);
 			});
 		result.push_back(entry);
